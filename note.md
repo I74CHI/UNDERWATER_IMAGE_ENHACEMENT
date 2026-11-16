@@ -275,7 +275,7 @@ Therefore, the output of `prepare_dataset.py` is not consumed by the current def
 | Google Colab / Google Drive | Suggested GPU training and model persistence |
 | VS Code | Project editing and local development environment |
 
-No Python requirements file or Python lockfile was found at review time. Python package versions are therefore not pinned in this repository. The frontend manifest declares Next.js `^14.2.0`, React `^18.2.0`, and React DOM `^18.2.0`; there is no npm lockfile in the project inventory.
+The root `requirements.txt` lists Python packages used by the API, image pipeline, U-Net workflow, both database options, tests, and UIEB notebook utilities. A pip dry-run resolved the manifest in the current Python environment without installing packages. It does not pin package versions, so it is not a lockfile; select versions compatible with the target Python and especially with TensorFlow. The frontend manifest declares Next.js `^14.2.0`, React `^18.2.0`, and React DOM `^18.2.0`; there is no npm lockfile in the project inventory.
 
 ## 11. Setup and run
 
@@ -283,7 +283,13 @@ No Python requirements file or Python lockfile was found at review time. Python 
 
 1. Install a Python version compatible with the selected packages and configure the database variables in `backend\.env` (do not publish that file).
 2. Create the database using `database\schema.sql` for SQL Server or `database\schema_mysql.sql` for MySQL.
-3. Install the backend and image-processing packages required by the imported modules: FastAPI, Uvicorn, `python-multipart` (for form uploads), NumPy, Pillow, OpenCV (`opencv-python`), and scikit-image. Install the selected database driver as well. TensorFlow is needed for U-Net training/inference; the optical fallback does not call the model.
+3. Install the Python packages:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+The file includes both database connectors and ML/notebook tools. SQL Server also requires the system ODBC Driver 17. TensorFlow must have a wheel compatible with the selected Python/platform; training can be run in the Colab notebook when local compatibility or GPU resources are an issue.
 4. From the repository root, start the app:
 
 ```powershell
@@ -348,7 +354,7 @@ The browser upload flow was also verified after the asset-URL fix: the loading i
 ## 13. Current limitations and maintenance notes
 
 1. **Model/data are not included.** The current checkout had no `ml\model\best_model.keras`, UIEB `raw-890` folder, or UIEB `reference-890` folder. Without the model, uploads use the optical fallback.
-2. **Python dependencies are not locked.** Add a tested requirements file or equivalent before reproducing the environment on another machine.
+2. **Python dependencies are not pinned.** `requirements.txt` provides the dependency list, but versions should be tested and pinned for reproducible deployment.
 3. **Dataset layouts disagree.** Align `prepare_dataset.py` and `dataset.py` before using the split-folder preparation output for training.
 4. **Patch helpers are duplicated.** Runtime training/inference uses `ml\patches.py`; the separate `ml\test_patches.py` test imports `ml\patch_utils.py`. Keep their behavior aligned or consolidate them deliberately.
 5. **Training is not live.** Collected user ratings are database records only.

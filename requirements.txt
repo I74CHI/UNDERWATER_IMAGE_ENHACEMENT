@@ -1,0 +1,24 @@
+# FastAPI backend and development server
+fastapi
+uvicorn[standard]
+python-multipart
+
+# Image processing and quality metrics
+numpy
+Pillow
+opencv-python
+scikit-image
+
+# U-Net training and inference
+tensorflow
+
+# Database options (install/configure the driver selected by DB_DRIVER)
+pyodbc
+mysql-connector-python
+
+# API test client
+httpx
+
+# UIEB download and training notebook visualization
+kaggle
+matplotlib

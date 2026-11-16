@@ -150,7 +150,7 @@ Phase 1 database tests complete.
 
 1. **Max File Size Enforcement (5 MB):** Checks file byte length before reading large memory buffers; rejects oversized payloads immediately with HTTP `413 Content Too Large`.
 2. **JPEG-Only Validation:** Validates `Content-Type` header (`image/jpeg`, `image/jpg`) AND verifies JPEG SOI magic bytes (`0xFFD8`) to prevent arbitrary file execution or processing crashes.
-3. **Decoupled Inference Architecture:** `backend/main.py` does not contain ML math; it delegates processing to `enhancement_service.py`. If `best_model.keras` is absent during development, the system falls back gracefully to CLAHE baseline enhancement so the entire stack can be tested immediately.
+3. **Decoupled Inference Architecture:** `backend/main.py` does not contain ML math; it delegates processing to `enhancement_service.py`. In the current source, if `best_model.keras` is absent or inference fails, the service uses `land_like_restore` from `ml/evaluate.py` and reports `land_like_optical`.
 4. **Database Audit Logging:** Successfully writes original path, enhanced path, and JSON processing stats (`patches`, `inference_ms`, `method`) to `Image`, and writes user ratings to `Feedback` table in MSSQL.
 5. **Static File Mounting:** Uploaded and enhanced images in `backend/storage/` are served at `/storage/{filename}`.
 
@@ -245,3 +245,34 @@ python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
 All 8 integration tests in `backend/test_api.py` pass.
+
+---
+
+## Phase 5 — Baseline Comparison, Runtime Reliability & Documentation ✅ COMPLETE
+
+**Date:** 2026-11-16
+
+### Changes
+
+- Connected the existing five classical enhancement methods to the upload workflow. The backend now saves a baseline image for Histogram Equalization, CLAHE, White Balance, Gamma Correction, and Retinex, alongside the AquaEnhance result.
+- Added no-reference UIQM and UCIQE scores for all six displayed results and returns the image URLs, method labels, and scores from `POST /enhance`.
+- Updated both frontend entry points (`frontend/index.html` and the Next.js page) to display comparison images and metrics.
+- Fixed a browser loading issue caused by API image URLs using `localhost` while the page was opened through `127.0.0.1`. Frontends now normalize result-image URLs to the configured API origin and show a useful error if the enhanced image cannot load.
+- Added backend response checks for the five baseline methods, metrics, and loadable result images.
+- Added root `requirements.txt` for FastAPI/Uvicorn, image processing, model training/inference, database drivers, tests, and UIEB notebook utilities. Versions are not pinned.
+- Added `note.md`, a detailed project guide covering architecture, tools, workflow, setup, testing, and known limitations.
+
+### Current implementation notes
+
+- The trained model `ml/model/best_model.keras` and UIEB data folders are not present in the current checkout. The live backend therefore uses the `land_like_restore` optical fallback unless a model is supplied.
+- `ml/prepare_dataset.py` writes split-specific folders, while `ml/dataset.py` currently reads the `raw-890` and `reference-890` layout. Align these paths before using the preparation script output for training.
+- API processing metadata reports `inference_ms`, measured across the overall enhancement and baseline/metrics work.
+
+### Verification
+
+- `python backend/test_api.py` — all 8 backend tests passed, including comparisons and PNG handling.
+- `python ml/test_patch.py` — 6/6 patch round-trip cases passed.
+- `python ml/test_patches.py` — passed.
+- Browser smoke test — upload completed, the loading indicator cleared, and all six comparison images loaded without failed requests.
+- `python -m pip install --dry-run -r requirements.txt` — dependency resolution succeeded in the current Python environment; no packages were installed by this check.
+- `npm run build` was not run successfully in this environment because `npm` was unavailable.
