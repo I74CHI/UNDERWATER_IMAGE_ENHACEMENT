@@ -1,0 +1,26 @@
+# ──────────────────────────────────────────────────────────────
+# AquaEnhance — MySQL fallback (use only if MSSQL is unavailable)
+# Usage:  docker compose up -d
+# ──────────────────────────────────────────────────────────────
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.3
+    container_name: aquaenhance_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: aquaenhance
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      # Persistent data — survives container restarts
+      - aquaenhance_mysql_data:/var/lib/mysql
+      # Auto-run schema on first start
+      - ./database/schema_mysql.sql:/docker-entrypoint-initdb.d/schema.sql:ro
+
+volumes:
+  aquaenhance_mysql_data:

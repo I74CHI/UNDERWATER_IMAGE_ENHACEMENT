@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AquaEnhance — Victorian Underwater Image Enhancement</title>
+  <style>
+    @font-face {
+      font-family: 'PixelCode';
+      src: url('/public/fonts/PixelCode.woff2') format('woff2'),
+           url('https://cdn.jsdelivr.net/gh/qwerasd205/PixelCode@master/dist/woff2/PixelCode.woff2') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'PixelCode';
+      src: url('/public/fonts/PixelCode-Bold.woff2') format('woff2'),
+           url('https://cdn.jsdelivr.net/gh/qwerasd205/PixelCode@master/dist/woff2/PixelCode-Bold.woff2') format('woff2');
+      font-weight: 700;
+      font-style: normal;
+    }
+
+    :root {
+      --bg-deep: #12100d;
+      --bg-card: #1c1813;
+      --bg-inset: #15120e;
+      --gold-primary: #cba863;
+      --gold-light: #e5c98e;
+      --gold-dim: #796135;
+      --text-main: #f3edd9;
+      --text-muted: #b0a38b;
+      --border-ornate: 3px double var(--gold-primary);
+      --border-thin: 1px solid var(--gold-dim);
+      --font-family: 'PixelCode', monospace, 'Georgia', serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-deep);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(203, 168, 99, 0.08) 0%, transparent 60%),
+        linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px);
+      background-size: 100% 100%, 24px 24px, 24px 24px;
+      color: var(--text-main);
+      font-family: var(--font-family);
+      line-height: 1.6;
+      padding: 24px 16px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1100px;
+    }
+
+    /* ── Victorian Header ── */
+    header {
+      text-align: center;
+      margin-bottom: 28px;
+      padding: 20px;
+      border: var(--border-ornate);
+      background: var(--bg-card);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.7), inset 0 0 40px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    header::before, header::after {
+      content: "⚜";
+      color: var(--gold-primary);
+      font-size: 24px;
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+    header::before { left: 24px; }
+    header::after { right: 24px; }
+
+    h1 {
+      font-size: 28px;
+      letter-spacing: 3px;
+      color: var(--gold-light);
+      text-transform: uppercase;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    /* ── Victorian Cards ── */
+    .card {
+      background: var(--bg-card);
+      border: var(--border-thin);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      position: relative;
+    }
+
+    .card-title {
+      font-size: 16px;
+      color: var(--gold-primary);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      border-bottom: var(--border-thin);
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* ── Upload Box ── */
+    .dropzone {
+      border: 2px dashed var(--gold-dim);
+      background: var(--bg-inset);
+      padding: 36px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--gold-light);
+      background: rgba(203, 168, 99, 0.05);
+    }
+
+    .dropzone-icon {
+      font-size: 32px;
+      color: var(--gold-primary);
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .btn {
+      font-family: var(--font-family);
+      font-size: 13px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 10px 22px;
+      background: var(--gold-primary);
+      color: #12100d;
+      border: 1px solid var(--gold-light);
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--gold-light);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(203, 168, 99, 0.3);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .error-banner {
+      display: none;
+      background: rgba(140, 20, 20, 0.25);
+      border: 1px solid #a43a3a;
+      color: #fca5a5;
+      padding: 10px 14px;
+      font-size: 12px;
+      margin-top: 14px;
+    }
+
+    .loading-indicator {
+      display: none;
+      color: var(--gold-light);
+      font-size: 13px;
+      letter-spacing: 1px;
+      margin-top: 14px;
+      text-align: center;
+    }
+
+    /* ── Side-by-Side Comparison ── */
+    .comparison-grid {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .comparison-grid {
+        grid-template-columns: 1fr;
+      }
+      header::before, header::after {
+        display: none;
+      }
+    }
+
+    .view-box {
+      border: var(--border-thin);
+      background: var(--bg-inset);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .view-label {
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      color: var(--gold-primary);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+      width: 100%;
+      text-align: center;
+      border-bottom: 1px dashed var(--gold-dim);
+      padding-bottom: 6px;
+    }
+
+    .view-box img, .view-box canvas {
+      max-width: 100%;
+      height: auto;
+      max-height: 480px;
+      object-fit: contain;
+      border: 1px solid #332b21;
+    }
+
+    .method-comparison {
+      display: none;
+      margin-top: 24px;
+      padding: 18px;
+      background: var(--bg-inset);
+      border: var(--border-thin);
+    }
+
+    .method-comparison-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed var(--gold-dim);
+    }
+
+    .method-comparison-header h2 {
+      color: var(--gold-primary);
+      font-size: 15px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .method-comparison-header p,
+    .method-comparison-note {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .method-comparison-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 14px;
+    }
+
+    .method-comparison-card {
+      min-width: 0;
+      padding: 12px;
+      border: var(--border-thin);
+      background: var(--bg-card);
+    }
+
+    .method-comparison-card h3 {
+      min-height: 38px;
+      margin-bottom: 8px;
+      color: var(--gold-light);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .method-comparison-card img {
+      display: block;
+      width: 100%;
+      height: 150px;
+      background: var(--bg-deep);
+      object-fit: contain;
+    }
+
+    .method-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .method-metrics div {
+      padding: 6px;
+      background: var(--bg-inset);
+      text-align: center;
+    }
+
+    .method-metrics dt {
+      color: var(--text-muted);
+      font-size: 10px;
+      letter-spacing: 1px;
+    }
+
+    .method-metrics dd {
+      color: var(--gold-light);
+      font-size: 13px;
+    }
+
+    /* ── Controls & Sliders ── */
+    .controls-panel {
+      display: none;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-top: 20px;
+      padding: 18px;
+      background: var(--bg-inset);
+      border: var(--border-thin);
+    }
+
+    @media (max-width: 600px) {
+      .controls-panel {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    .slider-header span:last-child {
+      color: var(--gold-light);
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      background: #2f271c;
+      border: 1px solid var(--gold-dim);
+      outline: none;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: var(--gold-primary);
+      border: 1px solid var(--gold-light);
+      cursor: pointer;
+    }
+
+    /* ── Actions & Feedback ── */
+    .action-row {
+      display: none;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-top: 22px;
+      padding-top: 18px;
+      border-top: var(--border-thin);
+    }
+
+    .rating-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .rating-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    .stars {
+      display: flex;
+      gap: 6px;
+    }
+
+    .star {
+      font-size: 22px;
+      color: #4a3e2b;
+      cursor: pointer;
+      transition: color 0.15s ease;
+      user-select: none;
+    }
+
+    .star.active, .star.hover {
+      color: var(--gold-primary);
+      text-shadow: 0 0 6px rgba(203, 168, 99, 0.6);
+    }
+
+    .feedback-status {
+      font-size: 11px;
+      color: var(--gold-light);
+      margin-left: 8px;
+    }
+
+    footer {
+      margin-top: auto;
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      padding-top: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Victorian Header -->
+    <header>
+      <h1>AquaEnhance</h1>
+      <div class="subtitle">Automated Underwater Optical Enhancement System &bull; U-Net Neural Engine</div>
+    </header>
+
+    <!-- Main Card -->
+    <section class="card">
+      <div class="card-title">
+        <span>Image Ingestion</span>
+        <span style="font-size: 11px; opacity: 0.8;">Max 5 MB &bull; JPG / JPEG / PNG</span>
+      </div>
+
+      <!-- Dropzone -->
+      <div class="dropzone" id="dropzone">
+        <div class="dropzone-icon">&#9875;</div>
+        <p style="font-size: 13px;">Drag & Drop a submarine or nautical photograph here, or</p>
+        <button class="btn" type="button" id="browseBtn">Select File</button>
+        <input type="file" id="fileInput" class="file-input" accept="image/jpeg, image/jpg, image/png">
+        <div style="font-size: 11px; color: var(--text-muted);" id="fileNameNotice">No photograph currently selected</div>
+      </div>
+
+      <div class="error-banner" id="errorBanner"></div>
+      <div class="loading-indicator" id="loadingIndicator">&#8987; Slicing into patches & running neural inference...</div>
+
+      <!-- Side by Side Grid -->
+      <div class="comparison-grid" id="comparisonGrid">
+        <div class="view-box">
+          <div class="view-label">Original Submerged Frame</div>
+          <img id="origImg" alt="Original underwater image">
+        </div>
+        <div class="view-box">
+          <div class="view-label">Enhanced Output Frame</div>
+          <canvas id="enhCanvas"></canvas>
+        </div>
+      </div>
+
+      <section class="method-comparison" id="methodComparison" aria-labelledby="methodComparisonTitle">
+        <div class="method-comparison-header">
+          <div>
+            <h2 id="methodComparisonTitle">Method Comparison</h2>
+            <p>Compare AquaEnhance with five established enhancement methods.</p>
+          </div>
+          <span class="method-comparison-note">
+            No-reference metrics &bull; Higher UIQM / UCIQE scores indicate better quality
+          </span>
+        </div>
+        <div class="method-comparison-grid" id="methodComparisonGrid"></div>
+      </section>
+
+      <!-- Sliders Panel -->
+      <div class="controls-panel" id="controlsPanel">
+        <div class="slider-group">
+          <div class="slider-header">
+            <span>Brightness Calibration</span>
+            <span id="brightVal">100%</span>
+          </div>
+          <input type="range" id="brightSlider" min="50" max="150" value="100">
+        </div>
+        <div class="slider-group">
+          <div class="slider-header">
+            <span>Sharpness Definition</span>
+            <span id="sharpVal">0</span>
+          </div>
+          <input type="range" id="sharpSlider" min="0" max="100" value="0">
+        </div>
+      </div>
+
+      <!-- Actions & Feedback -->
+      <div class="action-row" id="actionRow">
+        <button class="btn" id="downloadBtn">&#11123; Download Final Image</button>
+
+        <div class="rating-box">
+          <span class="rating-label">Quality Rating:</span>
+          <div class="stars" id="starContainer">
+            <span class="star" data-rating="1">&#9733;</span>
+            <span class="star" data-rating="2">&#9733;</span>
+            <span class="star" data-rating="3">&#9733;</span>
+            <span class="star" data-rating="4">&#9733;</span>
+            <span class="star" data-rating="5">&#9733;</span>
+          </div>
+          <span class="feedback-status" id="feedbackStatus"></span>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      AquaEnhance Final-Year B.Tech Computer Science Project &bull; Architectural Grade
+    </footer>
+  </div>
+
+  <script>
+    // ── Configuration ──
+    const API_BASE = window.location.origin; // Same origin when served by FastAPI, or override via env
+    const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+
+    function resolveApiImageUrl(url) {
+      const apiBase = new URL(API_BASE);
+      const imageUrl = new URL(url, apiBase);
+      return `${apiBase.origin}${imageUrl.pathname}${imageUrl.search}${imageUrl.hash}`;
+    }
+
+    // ── Elements ──
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const browseBtn = document.getElementById('browseBtn');
+    const fileNameNotice = document.getElementById('fileNameNotice');
+    const errorBanner = document.getElementById('errorBanner');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+
+    const comparisonGrid = document.getElementById('comparisonGrid');
+    const methodComparison = document.getElementById('methodComparison');
+    const methodComparisonGrid = document.getElementById('methodComparisonGrid');
+    const origImg = document.getElementById('origImg');
+    const enhCanvas = document.getElementById('enhCanvas');
+    const ctx = enhCanvas.getContext('2d');
+
+    const controlsPanel = document.getElementById('controlsPanel');
+    const brightSlider = document.getElementById('brightSlider');
+    const sharpSlider = document.getElementById('sharpSlider');
+    const brightVal = document.getElementById('brightVal');
+    const sharpVal = document.getElementById('sharpVal');
+
+    const actionRow = document.getElementById('actionRow');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const starContainer = document.getElementById('starContainer');
+    const feedbackStatus = document.getElementById('feedbackStatus');
+
+    let currentImageId = null;
+    let baseEnhancedImg = new Image();
+    let currentRating = 0;
+
+    // ── UI Helpers ──
+    function showError(msg) {
+      errorBanner.textContent = "⚠ " + msg;
+      errorBanner.style.display = 'block';
+      loadingIndicator.style.display = 'none';
+    }
+
+    function clearError() {
+      errorBanner.style.display = 'none';
+    }
+
+    // ── File Selection ──
+    browseBtn.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+    });
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files.length) handleFile(fileInput.files[0]);
+    });
+
+    function handleFile(file) {
+      clearError();
+      const validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      if (!validTypes.includes(file.type.toLowerCase()) && !file.name.match(/\.(jpe?g|png)$/i)) {
+        showError("Invalid format. Please supply a valid JPG, JPEG, or PNG photograph.");
+        return;
+      }
+      if (file.size > MAX_SIZE) {
+        showError("Photograph exceeds maximum permissible dimension of 5 MB.");
+        return;
+      }
+
+      fileNameNotice.textContent = `${file.name} (${(file.size / (1024*1024)).toFixed(2)} MB)`;
+      uploadAndEnhance(file);
+    }
+
+    // ── Upload & Inference ──
+    async function uploadAndEnhance(file) {
+      loadingIndicator.style.display = 'block';
+      comparisonGrid.style.display = 'none';
+      methodComparison.style.display = 'none';
+      methodComparisonGrid.replaceChildren();
+      controlsPanel.style.display = 'none';
+      actionRow.style.display = 'none';
+      feedbackStatus.textContent = '';
+      currentRating = 0;
+      updateStars(0);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      try {
+        const res = await fetch(`${API_BASE}/enhance`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: "Server error occurred" }));
+          throw new Error(err.detail || "Enhancement failed");
+        }
+
+        const data = await res.json();
+        currentImageId = data.image_id;
+        renderMethodComparisons(data.comparisons || []);
+
+        origImg.src = resolveApiImageUrl(data.original_url);
+        baseEnhancedImg.crossOrigin = "anonymous";
+        baseEnhancedImg.onload = () => {
+          enhCanvas.width = baseEnhancedImg.naturalWidth;
+          enhCanvas.height = baseEnhancedImg.naturalHeight;
+          resetSliders();
+          renderCanvas();
+
+          loadingIndicator.style.display = 'none';
+          comparisonGrid.style.display = 'grid';
+          methodComparison.style.display = data.comparisons && data.comparisons.length ? 'block' : 'none';
+          controlsPanel.style.display = 'grid';
+          actionRow.style.display = 'flex';
+        };
+        baseEnhancedImg.onerror = () => {
+          showError("The enhanced image could not be loaded. Check the API connection and try again.");
+        };
+        baseEnhancedImg.src = resolveApiImageUrl(data.enhanced_url);
+
+      } catch (err) {
+        showError(err.message);
+      }
+    }
+
+    // ── Canvas Rendering & Sliders ──
+    function resetSliders() {
+      brightSlider.value = 100;
+      sharpSlider.value = 0;
+      brightVal.textContent = '100%';
+      sharpVal.textContent = '0';
+    }
+
+    brightSlider.addEventListener('input', () => {
+      brightVal.textContent = brightSlider.value + '%';
+      renderCanvas();
+    });
+
+    sharpSlider.addEventListener('input', () => {
+      sharpVal.textContent = sharpSlider.value;
+      renderCanvas();
+    });
+
+    function renderCanvas() {
+      if (!baseEnhancedImg.complete) return;
+      const w = enhCanvas.width;
+      const h = enhCanvas.height;
+
+      const brightness = parseFloat(brightSlider.value) / 100.0;
+      const sharpness = parseFloat(sharpSlider.value); // 0 to 100
+
+      // 1. Draw base image with brightness filter
+      ctx.filter = `brightness(${brightness})`;
+      ctx.drawImage(baseEnhancedImg, 0, 0, w, h);
+      ctx.filter = 'none';
+
+      // 2. Client-side Unsharp Mask Convolution for Sharpness
+      if (sharpness > 0) {
+        const imgData = ctx.getImageData(0, 0, w, h);
+        const data = imgData.data;
+        const copy = new Uint8ClampedArray(data);
+        const strength = (sharpness / 100.0) * 1.5;
+
+        // 3x3 Laplacian edge enhancement
+        for (let y = 1; y < h - 1; y++) {
+          for (let x = 1; x < w - 1; x++) {
+            const idx = (y * w + x) * 4;
+            for (let c = 0; c < 3; c++) {
+              const center = copy[idx + c];
+              const laplacian = 
+                (center * 4)
+                - copy[((y - 1) * w + x) * 4 + c]
+                - copy[((y + 1) * w + x) * 4 + c]
+                - copy[(y * w + (x - 1)) * 4 + c]
+                - copy[(y * w + (x + 1)) * 4 + c];
+              data[idx + c] = Math.min(255, Math.max(0, center + laplacian * strength));
+            }
+          }
+        }
+        ctx.putImageData(imgData, 0, 0);
+      }
+    }
+
+    function renderMethodComparisons(comparisons) {
+      methodComparisonGrid.replaceChildren();
+      comparisons.forEach((comparison) => {
+        const card = document.createElement('article');
+        card.className = 'method-comparison-card';
+
+        const title = document.createElement('h3');
+        title.textContent = comparison.method;
+
+        const image = document.createElement('img');
+        image.src = resolveApiImageUrl(comparison.image_url);
+        image.alt = `${comparison.method} result`;
+        image.loading = 'lazy';
+
+        const metrics = document.createElement('dl');
+        metrics.className = 'method-metrics';
+        [
+          ['UIQM', comparison.metrics.uiqm],
+          ['UCIQE', comparison.metrics.uciqe],
+        ].forEach(([name, value]) => {
+          const item = document.createElement('div');
+          const label = document.createElement('dt');
+          label.textContent = name;
+          const score = document.createElement('dd');
+          score.textContent = Number(value).toFixed(3);
+          item.append(label, score);
+          metrics.append(item);
+        });
+
+        card.append(title, image, metrics);
+        methodComparisonGrid.append(card);
+      });
+    }
+
+    // ── Download Final Image ──
+    downloadBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = `AquaEnhance_${currentImageId || 'result'}.jpg`;
+      link.href = enhCanvas.toDataURL('image/jpeg', 0.95);
+      link.click();
+    });
+
+    // ── Feedback Stars ──
+    starContainer.querySelectorAll('.star').forEach(star => {
+      star.addEventListener('mouseenter', () => {
+        const val = parseInt(star.dataset.rating);
+        highlightStars(val);
+      });
+      star.addEventListener('mouseleave', () => {
+        highlightStars(currentRating);
+      });
+      star.addEventListener('click', () => {
+        const val = parseInt(star.dataset.rating);
+        currentRating = val;
+        updateStars(currentRating);
+        submitFeedback(currentRating);
+      });
+    });
+
+    function highlightStars(count) {
+      starContainer.querySelectorAll('.star').forEach(s => {
+        const r = parseInt(s.dataset.rating);
+        s.classList.toggle('hover', r <= count);
+      });
+    }
+
+    function updateStars(count) {
+      starContainer.querySelectorAll('.star').forEach(s => {
+        const r = parseInt(s.dataset.rating);
+        s.classList.toggle('active', r <= count);
+      });
+    }
+
+    async function submitFeedback(rating) {
+      if (!currentImageId) return;
+      feedbackStatus.textContent = 'Recording rating...';
+      try {
+        const res = await fetch(`${API_BASE}/feedback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_id: currentImageId, rating: rating }),
+        });
+        if (res.ok) {
+          feedbackStatus.textContent = '⚜ Rating recorded!';
+        } else {
+          feedbackStatus.textContent = 'Failed to submit rating.';
+        }
+      } catch (e) {
+        feedbackStatus.textContent = 'Error recording rating.';
+      }
+    }
+  </script>
+</body>
+</html>
